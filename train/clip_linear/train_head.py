@@ -95,6 +95,10 @@ def main():
     model.eval()
     with torch.no_grad():
         preds = model(Xval_t).argmax(dim=1).cpu().numpy()
+    with torch.no_grad():
+        train_preds = model(Xtr_t.to(device)).argmax(dim=1).cpu().numpy()
+    train_f1 = f1_score(ytr, train_preds, average="macro")
+    print(f"Train macro-F1 (best checkpoint): {train_f1:.4f}  |  Val macro-F1: {best_f1:.4f}  |  Gap: {train_f1 - best_f1:.4f}")
     print("\nBest checkpoint validation report:")
     print(classification_report(yval_np, preds, digits=4))
 
@@ -140,6 +144,8 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 ## Result
 - Best epoch: {best_epoch}
 - Best val macro-F1: {best_f1:.4f}
+- Train macro-F1 (best checkpoint): {train_f1:.4f}
+- Train-Val Gap: {train_f1 - best_f1:.4f}
 
 ### Classification report (best checkpoint, val split)
 {classification_report(yval_np, preds, digits=4, target_names=[CLASS_NAMES.get(i, str(i)) for i in range(num_classes)])}
