@@ -28,15 +28,15 @@ Generated: 2026-07-12 13:01:39
 - Best val macro-F1: 0.9726
 
 ### Classification report (best checkpoint, val split)
-              precision    recall  f1-score   support
-
-  Recyclable     0.9586    0.9628    0.9607      1370
-  Electronic     0.9726    0.9944    0.9834       535
-     Organic     0.9787    0.9689    0.9738      1803
-
-    accuracy                         0.9703      3708
-   macro avg     0.9700    0.9754    0.9726      3708
-weighted avg     0.9704    0.9703    0.9703      3708
+| - | precision | recall | f1-score | support |
+| --- | --- | --- | --- | --- |
+| Recyclable | 0.9586 | 0.9628 | 0.9607 | 1370 |
+| Electronic | 0.9726 | 0.9944 | 0.9834 | 535 |
+| Organic | 0.9787 | 0.9689 | 0.9738 | 1803 | 
+| |
+| accuracy | - | - | 0.9703 | 3708 |
+| macro avg | | 0.9700 | 0.9754 | 0.9726 | 3708 |
+| weighted avg | 0.9704 | 0.9703 | 0.9703 | 3708 |
 
 
 ## Output
