@@ -33,7 +33,7 @@ python3 train/clip_linear/predict.py \
   --test-dir TestImages \
   --head-checkpoint train/clip_linear/head.pt \
   --model ViT-B/32 \
-  --output submission.csv
+  --output predict/clip_linear/submission.csv
 ```
 Writes `id,predicted` in the order test files sort numerically, matching `template.csv`. Codes: `0=Recyclable, 1=Electronic, 2=Organic`.
 
