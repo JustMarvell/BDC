@@ -8,6 +8,17 @@ from datetime import datetime
 from utils import CLASS_NAMES
 from sklearn.metrics import f1_score, classification_report
 
+def report_to_markdown(y_true, y_pred, target_names):
+    rep = classification_report(y_true, y_pred, target_names=target_names, output_dict=True, digits=4)
+    lines = ["| Class | Precision | Recall | F1-score | Support |", "|---|---|---|---|---|"]
+    for name in target_names:
+        r = rep[name]
+        lines.append(f"| {name} | {r['precision']:.4f} | {r['recall']:.4f} | {r['f1-score']:.4f} | {int(r['support'])} |")
+    lines.append(f"| **accuracy** | | | {rep['accuracy']:.4f} | {int(rep['macro avg']['support'])} |")
+    for avg in ["macro avg", "weighted avg"]:
+        r = rep[avg]
+        lines.append(f"| {avg} | {r['precision']:.4f} | {r['recall']:.4f} | {r['f1-score']:.4f} | {int(r['support'])} |")
+    return "\n".join(lines)
 
 class Head(nn.Module):
     def __init__(self, in_dim, num_classes, hidden_dim=0, dropout=0.2):
@@ -148,7 +159,7 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 - Train-Val Gap: {train_f1 - best_f1:.4f}
 
 ### Classification report (best checkpoint, val split)
-{classification_report(yval_np, preds, digits=4, target_names=[CLASS_NAMES.get(i, str(i)) for i in range(num_classes)])}
+{report_to_markdown(yval_np, preds, [CLASS_NAMES.get(i, str(i)) for i in range(num_classes)])}
 
 ## Output
 - Checkpoint saved to: {out_path.resolve()}
