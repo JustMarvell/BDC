@@ -6,6 +6,7 @@ import torch
 from PIL import Image
 from tqdm import tqdm
 
+CLASS_NAMES = {0: "Recyclable", 1: "Electronic", 2: "Organic"}
 VALID_EXT = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
 

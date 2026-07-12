@@ -42,7 +42,7 @@ def main():
             continue
         print(f"\nExtracting {split} split from {split_dir}")
         feats, labels, files = extract_split(split_dir, model, preprocess, device, args.batch_size)
-        np.savez(out_dir / f"{split}.npz", features=feats, labels=labels, files=files)
+        np.savez(out_dir / f"{split}.npz", features=feats, labels=labels, files=files, model=args.model)
         print(f"Saved {out_dir / (split + '.npz')} ({feats.shape[0]} samples, dim={feats.shape[1]})")
 
 

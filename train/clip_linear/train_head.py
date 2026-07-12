@@ -4,6 +4,8 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn as nn
+from datetime import datetime
+from utils import CLASS_NAMES
 from sklearn.metrics import f1_score, classification_report
 
 
@@ -40,11 +42,13 @@ def main():
     ap.add_argument("--weight-decay", type=float, default=1e-4)
     ap.add_argument("--batch-size", type=int, default=256)
     ap.add_argument("--patience", type=int, default=8)
+    ap.add_argument("--report-dir", default="predict/clip_linear")
     args = ap.parse_args()
 
     emb_dir = Path(args.embeddings_dir)
     Xtr, ytr = load_npz(emb_dir / "train.npz")
     Xval, yval = load_npz(emb_dir / "val.npz")
+    clip_model_name = np.load(emb_dir / "train.npz", allow_pickle=True)["model"].item()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     Xtr_t = torch.tensor(Xtr, dtype=torch.float32)
@@ -60,7 +64,7 @@ def main():
     ds = torch.utils.data.TensorDataset(Xtr_t, ytr_t)
     loader = torch.utils.data.DataLoader(ds, batch_size=args.batch_size, shuffle=True)
 
-    best_f1, best_state, stale = -1, None, 0
+    best_f1, best_state, stale, best_epoch = -1, None, 0, 0
 
     for epoch in range(1, args.epochs + 1):
         model.train()
@@ -80,7 +84,7 @@ def main():
         print(f"epoch {epoch:3d} | loss {total_loss/len(ds):.4f} | val macro-F1 {val_f1:.4f}")
 
         if val_f1 > best_f1:
-            best_f1, best_state, stale = val_f1, {k: v.cpu().clone() for k, v in model.state_dict().items()}, 0
+            best_f1, best_state, stale, best_epoch = val_f1, {k: v.cpu().clone() for k, v in model.state_dict().items()}, 0, epoch
         else:
             stale += 1
             if stale >= args.patience:
@@ -104,6 +108,48 @@ def main():
         "dropout": args.dropout,
     }, out_path)
     print(f"\nSaved best head (val macro-F1 {best_f1:.4f}) to {out_path}")
+    report_dir = Path(args.report_dir)
+    report_dir.mkdir(parents=True, exist_ok=True)
+    train_counts = {CLASS_NAMES.get(int(c), int(c)): int((ytr == c).sum()) for c in sorted(set(ytr.tolist()))}
+    val_counts = {CLASS_NAMES.get(int(c), int(c)): int((yval == c).sum()) for c in sorted(set(yval.tolist()))}
+    report = f"""# Train Report — CLIP Linear/MLP Head
+
+Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+## Backbone
+- CLIP model: {clip_model_name}
+- Embeddings dir: {emb_dir.resolve()}
+
+## Architecture
+- Head type: {'Linear probe' if args.hidden_dim == 0 else f'MLP (hidden_dim={args.hidden_dim}, dropout={args.dropout})'}
+- Input dim: {Xtr.shape[1]}
+- Num classes: {num_classes}
+
+## Hyperparameters
+- Epochs (max): {args.epochs}
+- Epochs run: {epoch}
+- Learning rate: {args.lr}
+- Weight decay: {args.weight_decay}
+- Batch size: {args.batch_size}
+- Early stopping patience: {args.patience}
+
+## Dataset
+- Train samples: {len(ytr)} — {train_counts}
+- Val samples: {len(yval)} — {val_counts}
+
+## Result
+- Best epoch: {best_epoch}
+- Best val macro-F1: {best_f1:.4f}
+
+### Classification report (best checkpoint, val split)
+{classification_report(yval_np, preds, digits=4, target_names=[CLASS_NAMES.get(i, str(i)) for i in range(num_classes)])}
+
+## Output
+- Checkpoint saved to: {out_path.resolve()}
+"""
+    report_path = report_dir / "train_report.md"
+    report_path.write_text(report)
+    print(f"Saved training report to {report_path.resolve()}")
 
 
 if __name__ == "__main__":

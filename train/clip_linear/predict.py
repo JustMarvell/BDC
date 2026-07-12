@@ -5,6 +5,9 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from datetime import datetime
+from utils import load_clip, collect_test_files, extract_features, CLASS_NAMES
+
 from utils import load_clip, collect_test_files, extract_features
 from train_head import Head
 
@@ -16,6 +19,7 @@ def main():
     ap.add_argument("--model", default="ViT-B/32")
     ap.add_argument("--output", default="submission.csv")
     ap.add_argument("--batch-size", type=int, default=64)
+    ap.add_argument("--report-dir", default="predict/clip_linear")
     args = ap.parse_args()
 
     test_dir = Path(args.test_dir)
@@ -44,6 +48,29 @@ def main():
     print(f"Saved predictions to {out_path.resolve()}")
     unique, counts = np.unique(preds, return_counts=True)
     print(dict(zip(unique.tolist(), counts.tolist())))
+    report_dir = Path(args.report_dir)
+    report_dir.mkdir(parents=True, exist_ok=True)
+    dist = {CLASS_NAMES.get(int(u), int(u)): int(c) for u, c in zip(unique, counts)}
+    report = f"""# Predict Report — CLIP Linear/MLP Head
+
+Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+## Inputs
+- Test dir: {test_dir.resolve()}
+- Test images found: {len(files)}
+- CLIP model: {args.model}
+- Head checkpoint: {Path(args.head_checkpoint).resolve()}
+- Head type: {'Linear probe' if ckpt['hidden_dim'] == 0 else f"MLP (hidden_dim={ckpt['hidden_dim']}, dropout={ckpt['dropout']})"}
+
+## Prediction distribution
+{chr(10).join(f'- {name}: {cnt}' for name, cnt in dist.items())}
+
+## Output
+- Submission saved to: {out_path.resolve()}
+"""
+    report_path = report_dir / "predict_report.md"
+    report_path.write_text(report)
+    print(f"Saved prediction report to {report_path.resolve()}")
 
 
 if __name__ == "__main__":
